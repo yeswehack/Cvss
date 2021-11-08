@@ -384,7 +384,7 @@ class Cvss3
      *
      * @return int|null|string
      */
-    protected function getSeverity($score)
+    public function getSeverity($score)
     {
         foreach ($this->severityRatingScale as $level => $options) {
             if ($score >= $options['min_range'] && $score <= $options['max_range']) {
