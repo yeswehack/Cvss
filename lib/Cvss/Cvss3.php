@@ -2,6 +2,7 @@
 
 namespace YWH\Cvss;
 
+use InvalidArgumentException;
 use Symfony\Component\OptionsResolver\Options;
 use Symfony\Component\OptionsResolver\OptionsResolver;
 
@@ -13,7 +14,6 @@ use Symfony\Component\OptionsResolver\OptionsResolver;
  */
 class Cvss3
 {
-
     /**
      * CVSS Version
      */
@@ -22,238 +22,238 @@ class Cvss3
     /**
      * @var string
      */
-    static protected $vectorHead = 'CVSS:3.0';
+    static protected string $vectorHead = 'CVSS:3.0';
 
     /**
      * @var string
      */
-    static protected $metricSeparator = '/';
+    static protected string $metricSeparator = '/';
 
     /**
      * @var string
      */
-    static protected $valueSeparator = ':';
+    static protected string $valueSeparator = ':';
 
     /**
      * @var float
      */
-    static protected $exploitabilityCoefficient = 8.22;
+    static protected float $exploitabilityCoefficient = 8.22;
 
     /**
      * @var float
      */
-    static protected $scopeCoefficient = 1.08;
-
-    /**
-     * @var array
-     */
-    private $vectorInputs = array();
-
-    /**
-     * @var array
-     */
-    private $vectorLevels = array();
-
-    /**
-     * @var float
-     */
-    private $baseScore = 0;
-
-    /**
-     * @var float
-     */
-    private $temporalScore = 0;
-
-    /**
-     * @var float
-     */
-    private $environmentalScore = 0;
+    static protected float $scopeCoefficient = 1.08;
 
     /**
      * Base metrics definition
      *
      * @var array
      */
-    private $baseMetrics = array(
-        'AV' => array(
+    static private array $baseMetrics = [
+        'AV' => [
             'N' => 0.85,
             'A' => 0.62,
             'L' => 0.55,
             'P' => 0.2,
-        ),
-        'AC' => array(
+        ],
+        'AC' => [
             'L' => 0.77,
             'H' => 0.44,
-        ),
-        'PR' => array(
+        ],
+        'PR' => [
             'N' => 0.85,
-            'L' => array(
+            'L' => [
                 'unchanged' => 0.62,
                 'changed' => 0.68,
-            ),
-            'H' => array(
+            ],
+            'H' => [
                 'unchanged' => 0.27,
                 'changed' => 0.50,
-            ),
-        ),
-        'UI' => array(
+            ],
+        ],
+        'UI' => [
             'N' => 0.85,
             'R' => 0.62,
-        ),
-        'S' => array(
+        ],
+        'S' => [
             'U' => 6.42,
             'C' => 7.52,
-        ),
-        'C' => array(
+        ],
+        'C' => [
             'N' => 0,
             'L' => 0.22,
             'H' => 0.56,
-        ),
-        'I' => array(
+        ],
+        'I' => [
             'N' => 0,
             'L' => 0.22,
             'H' => 0.56,
-        ),
-        'A' => array(
+        ],
+        'A' => [
             'N' => 0,
             'L' => 0.22,
             'H' => 0.56,
-        ),
-    );
+        ],
+    ];
 
     /**
      * Temporal metrics definition
      *
      * @var array
      */
-    private $temporalMetrics = array(
-        'E' => array(
+    static private array $temporalMetrics = [
+        'E' => [
             'X' => 1,
             'U' => 0.91,
             'P' => 0.94,
             'F' => 0.97,
             'H' => 1,
-        ),
-        'RL' => array(
+        ],
+        'RL' => [
             'X' => 1,
             'O' => 0.95,
             'T' => 0.96,
             'W' => 0.97,
             'U' => 1,
-        ),
-        'RC' => array(
+        ],
+        'RC' => [
             'X' => 1,
             'U' => 0.92,
             'R' => 0.96,
             'C' => 1,
-        ),
-    );
+        ],
+    ];
 
     /**
      * Environment metrics definition
      *
      * @var array
      */
-    private $environmentalMetrics = array(
-        'CR' => array(
+    static private array $environmentalMetrics = [
+        'CR' => [
             'X' => 1,
             'L' => 0.5,
             'M' => 1,
             'H' => 1.5,
-        ),
-        'IR' => array(
+        ],
+        'IR' => [
             'X' => 1,
             'L' => 0.5,
             'M' => 1,
             'H' => 1.5,
-        ),
-        'AR' => array(
+        ],
+        'AR' => [
             'X' => 1,
             'L' => 0.5,
             'M' => 1,
             'H' => 1.5,
-        ),
-        'MAV' => array(
+        ],
+        'MAV' => [
             'X' => 0,
             'N' => 0.85,
             'A' => 0.62,
             'L' => 0.55,
             'P' => 0.2,
-        ),
-        'MAC' => array(
+        ],
+        'MAC' => [
             'X' => 0,
             'L' => 0.77,
             'H' => 0.44,
-        ),
-        'MPR' => array(
+        ],
+        'MPR' => [
             'X' => 0,
             'N' => 0.85,
-            'L' => array(
+            'L' => [
                 'unchanged' => 0.62,
                 'changed' => 0.68,
-            ),
-            'H' => array(
+            ],
+            'H' => [
                 'unchanged' => 0.27,
                 'changed' => 0.50,
-            ),
-        ),
-        'MUI' => array(
+            ],
+        ],
+        'MUI' => [
             'X' => 0,
             'N' => 0.85,
             'R' => 0.62,
-        ),
-        'MS' => array(
+        ],
+        'MS' => [
             'X' => 0,
             'U' => 6.42,
             'C' => 7.52,
-        ),
-        'MC' => array(
+        ],
+        'MC' => [
             'X' => 0,
             'N' => 0,
             'L' => 0.22,
             'H' => 0.56,
-        ),
-        'MI' => array(
+        ],
+        'MI' => [
             'X' => 0,
             'N' => 0,
             'L' => 0.22,
             'H' => 0.56,
-        ),
-        'MA' => array(
+        ],
+        'MA' => [
             'X' => 0,
             'N' => 0,
             'L' => 0.22,
             'H' => 0.56,
-        ),
-    );
+        ],
+    ];
 
     /**
      * Severity rating scale
      *
      * @var array
      */
-    private $severityRatingScale = array(
-        'N' => array(
+    static private array $severityRatingScale = [
+        'N' => [
             'min_range' => 0,
             'max_range' => 0.1,
-        ),
-        'L' => array(
+        ],
+        'L' => [
             'min_range' => 0.1,
             'max_range' => 3.9,
-        ),
-        'M' => array(
+        ],
+        'M' => [
             'min_range' => 4.0,
             'max_range' => 6.9,
-        ),
-        'H' => array(
+        ],
+        'H' => [
             'min_range' => 7.0,
             'max_range' => 8.9,
-        ),
-        'C' => array(
+        ],
+        'C' => [
             'min_range' => 9.0,
             'max_range' => 10.0,
-        ),
-    );
+        ],
+    ];
+
+    /**
+     * @var array
+     */
+    private array $vectorInputs = [];
+
+    /**
+     * @var array
+     */
+    private array $vectorLevels = [];
+
+    /**
+     * @var float
+     */
+    private float $baseScore = 0;
+
+    /**
+     * @var float
+     */
+    private float $temporalScore = 0;
+
+    /**
+     * @var float
+     */
+    private float $environmentalScore = 0;
 
     /**
      * Cvss3 constructor.
@@ -267,16 +267,16 @@ class Cvss3
      *
      * @param string $vector
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
-    public function setVector($vector)
+    public function setVector(string $vector): void
     {
         if (empty($vector)) {
-            throw new \InvalidArgumentException(sprintf('Cvss vector "%s" is not valid.', $vector));
+            throw new InvalidArgumentException(sprintf('Cvss vector "%s" is not valid.', $vector));
         }
 
-        if (!preg_match('/^'.self::$vectorHead.'.*/mi', $vector)) {
-            throw new \InvalidArgumentException((sprintf('Cvss vector "%s" is not valid. Must start with "%s"', $vector, self::$vectorHead)));
+        if (!preg_match('/^' . self::$vectorHead . '.*/mi', $vector)) {
+            throw new InvalidArgumentException((sprintf('Cvss vector "%s" is not valid. Must start with "%s"', $vector, self::$vectorHead)));
         }
 
         $this->vectorInputs = self::parseVector($vector);
@@ -292,7 +292,7 @@ class Cvss3
      *
      * @return float
      */
-    public function getBaseScore()
+    public function getBaseScore(): float
     {
         return $this->baseScore;
     }
@@ -300,11 +300,11 @@ class Cvss3
     /**
      * Get base score severity
      *
-     * @return int|null|string
+     * @return null|string
      */
-    public function getBaseScoreSeverity()
+    public function getBaseScoreSeverity(): ?string
     {
-        return $this->getSeverity($this->baseScore);
+        return self::getSeverity($this->baseScore);
     }
 
     /**
@@ -312,9 +312,9 @@ class Cvss3
      *
      * @return array
      */
-    public function getBaseMetricDefinitions()
+    public function getBaseMetricDefinitions(): array
     {
-        return $this->baseMetrics;
+        return self::$baseMetrics;
     }
 
     /**
@@ -322,7 +322,7 @@ class Cvss3
      *
      * @return float
      */
-    public function getTemporalScore()
+    public function getTemporalScore(): float
     {
         return $this->temporalScore;
     }
@@ -330,11 +330,11 @@ class Cvss3
     /**
      * Get temporal score severity
      *
-     * @return int|null|string
+     * @return null|string
      */
-    public function getTemporalScoreSeverity()
+    public function getTemporalScoreSeverity(): ?string
     {
-        return $this->getSeverity($this->temporalScore);
+        return self::getSeverity($this->temporalScore);
     }
 
     /**
@@ -342,9 +342,9 @@ class Cvss3
      *
      * @return array
      */
-    public function getTemporalMetricDefinitions()
+    public function getTemporalMetricDefinitions(): array
     {
-        return $this->temporalMetrics;
+        return self::$temporalMetrics;
     }
 
     /**
@@ -352,7 +352,7 @@ class Cvss3
      *
      * @return float
      */
-    public function getEnvironmentalScore()
+    public function getEnvironmentalScore(): float
     {
         return $this->environmentalScore;
     }
@@ -362,9 +362,9 @@ class Cvss3
      *
      * @return null|string
      */
-    public function getEnvironmentalScoreSeverity()
+    public function getEnvironmentalScoreSeverity(): ?string
     {
-        return $this->getSeverity($this->environmentalScore);
+        return self::getSeverity($this->environmentalScore);
     }
 
     /**
@@ -372,9 +372,9 @@ class Cvss3
      *
      * @return array
      */
-    public function getEnvironmentalMetricDefinitions()
+    public function getEnvironmentalMetricDefinitions(): array
     {
-        return $this->environmentalMetrics;
+        return self::$environmentalMetrics;
     }
 
     /**
@@ -382,15 +382,16 @@ class Cvss3
      *
      * @param float $score
      *
-     * @return int|null|string
+     * @return null|string
      */
-    protected function getSeverity($score)
+    static public function getSeverity(float $score): ?string
     {
-        foreach ($this->severityRatingScale as $level => $options) {
+        foreach (self::$severityRatingScale as $level => $options) {
             if ($score >= $options['min_range'] && $score <= $options['max_range']) {
                 return $level;
             }
         }
+
         return null;
     }
 
@@ -399,15 +400,13 @@ class Cvss3
      *
      * @return float
      */
-    public function getOverallScore()
+    public function getOverallScore(): float
     {
         if ($this->environmentalScore != $this->baseScore) {
             return $this->environmentalScore;
-        }
-        elseif ($this->temporalScore != $this->baseScore) {
+        } elseif ($this->temporalScore != $this->baseScore) {
             return $this->temporalScore;
-        }
-        else {
+        } else {
             return $this->baseScore;
         }
     }
@@ -415,9 +414,9 @@ class Cvss3
     /**
      * Get overall severity
      *
-     * @return int|null|string
+     * @return null|string
      */
-    public function getOverallScoreSeverity()
+    public function getOverallScoreSeverity(): ?string
     {
         return $this->getSeverity($this->getOverallScore());
     }
@@ -427,9 +426,9 @@ class Cvss3
      *
      * @return string
      */
-    public function getBaseVector()
+    public function getBaseVector(): string
     {
-        return self::buildVector(array_intersect_key($this->vectorInputs, $this->baseMetrics));
+        return self::buildVector(array_intersect_key($this->vectorInputs, self::$baseMetrics));
     }
 
     /**
@@ -439,7 +438,7 @@ class Cvss3
      *
      * @return string
      */
-    public function getVector($omitUndefined = true)
+    public function getVector(bool $omitUndefined = true): string
     {
         $metrics = array();
         foreach ($this->vectorInputs as $name => $value) {
@@ -458,9 +457,10 @@ class Cvss3
      *
      * @return string
      */
-    static function buildVector(array $inputs)
+    static function buildVector(array $inputs): string
     {
         $inputs = array_merge(array('CVSS' => self::VERSION), $inputs);
+
         return implode(self::$metricSeparator, array_map(function ($k, $v) {
             return sprintf('%1$s%3$s%2$s', strtoupper($k), strtoupper($v), self::$valueSeparator);
         }, array_keys($inputs), $inputs));
@@ -473,7 +473,7 @@ class Cvss3
      *
      * @return array
      */
-    static function parseVector($vector)
+    static function parseVector(string $vector): array
     {
         $vectorInputs = array();
         $vector = preg_replace('/^' . self::$vectorHead . '[\\' . self::$metricSeparator . ']?/', '', $vector);
@@ -486,6 +486,7 @@ class Cvss3
                 }
             }
         }
+
         return $vectorInputs;
     }
 
@@ -494,55 +495,50 @@ class Cvss3
      *
      * @return OptionsResolver
      */
-    private function getInputLevelConfiguration()
+    private function getInputLevelConfiguration(): OptionsResolver
     {
         $resolver = new OptionsResolver();
-        foreach ($this->baseMetrics as $metric => $values) {
+        foreach (self::$baseMetrics as $metric => $values) {
             $resolver
                 ->setRequired($metric)
-                ->setAllowedValues($metric, array_keys($values))
-            ;
+                ->setAllowedValues($metric, array_keys($values));
             if ($metric == 'PR') {
                 $resolver->setNormalizer($metric, function (Options $options, $value) use ($metric) {
                     switch ($value) {
                         case 'L':
                         case 'H':
                             if ($this->vectorInputs['S'] == 'U') {
-                                $value = (float) $this->baseMetrics[$metric][$value]['unchanged'];
-                            }
-                            elseif ($this->vectorInputs['S'] == 'C') {
-                                $value = (float) $this->baseMetrics[$metric][$value]['changed'];
+                                $value = (float)self::$baseMetrics[$metric][$value]['unchanged'];
+                            } elseif ($this->vectorInputs['S'] == 'C') {
+                                $value = (float)self::$baseMetrics[$metric][$value]['changed'];
                             }
                             break;
                         default:
-                            $value = (float) $this->baseMetrics[$metric][$value];
+                            $value = (float)self::$baseMetrics[$metric][$value];
                             break;
                     }
                     return $value;
                 });
-            }
-            else {
+            } else {
                 $resolver->setNormalizer($metric, function (Options $options, $value) use ($metric) {
-                    return (float) $this->baseMetrics[$metric][$value];
+                    return (float)self::$baseMetrics[$metric][$value];
                 });
             }
         }
 
-        foreach ($this->temporalMetrics as $metric => $values) {
+        foreach (self::$temporalMetrics as $metric => $values) {
             $resolver
                 ->setDefault($metric, 'X')
                 ->setAllowedValues($metric, array_keys($values))
                 ->setNormalizer($metric, function (Options $options, $value) use ($metric) {
-                    return (float) $this->temporalMetrics[$metric][$value];
-                })
-            ;
+                    return (float)self::$temporalMetrics[$metric][$value];
+                });
         }
 
-        foreach ($this->environmentalMetrics as $metric => $values) {
+        foreach (self::$environmentalMetrics as $metric => $values) {
             $resolver
                 ->setDefault($metric, 'X')
-                ->setAllowedValues($metric, array_keys($values))
-            ;
+                ->setAllowedValues($metric, array_keys($values));
             switch ($metric) {
                 case 'MPR':
                     $resolver->setNormalizer($metric, function (Options $options, $value) use ($metric) {
@@ -550,15 +546,14 @@ class Cvss3
                         switch ($value) {
                             case 'X':
                                 if ($this->vectorInputs[substr($metric, 1)] == 'N') {
-                                    $value = (float)$this->baseMetrics[substr($metric, 1)][$this->vectorInputs[substr($metric, 1)]];
-                                }
-                                else {
+                                    $value = (float)self::$baseMetrics[substr($metric, 1)][$this->vectorInputs[substr($metric, 1)]];
+                                } else {
                                     switch ($modifiedScope) {
                                         case 'U':
-                                            $value = (float)$this->baseMetrics[substr($metric, 1)][$this->vectorInputs[substr($metric, 1)]]['unchanged'];
+                                            $value = (float)self::$baseMetrics[substr($metric, 1)][$this->vectorInputs[substr($metric, 1)]]['unchanged'];
                                             break;
                                         case 'C':
-                                            $value = (float)$this->baseMetrics[substr($metric, 1)][$this->vectorInputs[substr($metric, 1)]]['changed'];
+                                            $value = (float)self::$baseMetrics[substr($metric, 1)][$this->vectorInputs[substr($metric, 1)]]['changed'];
                                             break;
                                     }
                                 }
@@ -567,15 +562,15 @@ class Cvss3
                             case 'H':
                                 switch ($modifiedScope) {
                                     case 'U':
-                                        $value = (float) $this->environmentalMetrics[$metric][$value]['unchanged'];
+                                        $value = (float)self::$environmentalMetrics[$metric][$value]['unchanged'];
                                         break;
                                     case 'C':
-                                        $value = (float) $this->environmentalMetrics[$metric][$value]['changed'];
+                                        $value = (float)self::$environmentalMetrics[$metric][$value]['changed'];
                                         break;
                                 }
                                 break;
                             default:
-                                $value = (float) $this->environmentalMetrics[$metric][$value];
+                                $value = (float)self::$environmentalMetrics[$metric][$value];
                                 break;
                         }
 
@@ -586,16 +581,15 @@ class Cvss3
                 case 'IR':
                 case 'AR':
                     $resolver->setNormalizer($metric, function (Options $options, $value) use ($metric) {
-                        return (float) $this->environmentalMetrics[$metric][$value];
+                        return (float)self::$environmentalMetrics[$metric][$value];
                     });
                     break;
                 default:
                     $resolver->setNormalizer($metric, function (Options $options, $value) use ($metric) {
                         if ($value == 'X') {
-                            $value = (float) $options[substr($metric, 1)];
-                        }
-                        else {
-                            $value = (float) $this->environmentalMetrics[$metric][$value];
+                            $value = (float)$options[substr($metric, 1)];
+                        } else {
+                            $value = (float)self::$environmentalMetrics[$metric][$value];
                         }
                         return $value;
                     });
@@ -609,7 +603,7 @@ class Cvss3
     /**
      * Calculate base, temporal and environmental scores
      */
-    private function calculate()
+    private function calculate(): void
     {
         /**
          * Base score
@@ -629,8 +623,7 @@ class Cvss3
 
         if ($impactSubScore <= 0) {
             $this->baseScore = 0;
-        }
-        else {
+        } else {
             switch ($this->vectorInputs['S']) {
                 case 'U':
                     $this->baseScore = self::roundUp(min($impactSubScore + $exploitabilitySubScore, 10));
@@ -665,8 +658,7 @@ class Cvss3
 
         if ($modifiedImpactSubScore <= 0) {
             $this->environmentalScore = 0;
-        }
-        else {
+        } else {
             switch ($modifiedScope) {
                 case 'U':
                     $this->environmentalScore = self::roundUp(self::roundUp(min($modifiedImpactSubScore + $modifiedExploitabilitySubScore, 10)) * $this->vectorLevels['E'] * $this->vectorLevels['RL'] * $this->vectorLevels['RC']);
@@ -679,12 +671,11 @@ class Cvss3
     }
 
     /**
-     *
      * @param float $number number to round
      *
      * @return float
      */
-    public static function roundUp($number)
+    public static function roundUp(float $number): float
     {
         return round(ceil($number * 10) / 10, 1);
     }
